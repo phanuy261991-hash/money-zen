@@ -100,6 +100,15 @@ object AppStrings {
     val deleteBillMsg get() = if (isEn) "Are you sure you want to delete this recurring bill?" else "Bạn có chắc chắn muốn xóa hóa đơn định kỳ này không?"
     val deleteBtn get() = if (isEn) "Delete" else "Xóa"
 
+    // Category Strings
+    val addCategoryTitle get() = if (isEn) "Add New Category" else "Thêm Danh Mục Mới"
+    val categoryNameLabel get() = if (isEn) "Category Name" else "Tên danh mục"
+    val categoryTypeLabel get() = if (isEn) "Category Type" else "Loại danh mục"
+    val categoryIconLabel get() = if (isEn) "Choose Icon" else "Chọn Biểu Tượng"
+    val categoryColorLabel get() = if (isEn) "Choose Color" else "Chọn Màu Sắc"
+    val addNewCategoryBtn get() = if (isEn) "+ Add New" else "+ Thêm Mới"
+    val allCategoriesLabel get() = if (isEn) "All Categories" else "Tất cả danh mục"
+
     // Settings Screen
     val securityTitle get() = if (isEn) "Fingerprint & Device Lock" else "Xác Thực Vân Tay & Khóa Thiết Bị"
     val securityEnabled get() = if (isEn) "Biometric login protection ON" else "Đang bật bảo mật đăng nhập"

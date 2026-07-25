@@ -21,9 +21,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
@@ -107,12 +110,13 @@ fun AddEditTransactionDialog(
     }
 
     var showDatePicker by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
     var amountError by remember { mutableStateOf(false) }
 
     val categories = if (type == TransactionType.EXPENSE.name) {
-        CategoryData.expenseCategories
+        CategoryData.getExpenseCategories()
     } else {
-        CategoryData.incomeCategories
+        CategoryData.getIncomeCategories()
     }
 
     if (showDatePicker) {
@@ -190,7 +194,7 @@ fun AddEditTransactionDialog(
                             )
                             .clickable {
                                 type = TransactionType.EXPENSE.name
-                                if (CategoryData.expenseCategories.none { it.name == selectedCategory }) {
+                                if (CategoryData.getExpenseCategories().none { it.name == selectedCategory }) {
                                     selectedCategory = "Ăn uống"
                                 }
                             }
@@ -213,7 +217,7 @@ fun AddEditTransactionDialog(
                             )
                             .clickable {
                                 type = TransactionType.INCOME.name
-                                if (CategoryData.incomeCategories.none { it.name == selectedCategory }) {
+                                if (CategoryData.getIncomeCategories().none { it.name == selectedCategory }) {
                                     selectedCategory = "Lương"
                                 }
                             }
@@ -369,7 +373,7 @@ fun AddEditTransactionDialog(
                                 CategoryIcon(categoryName = cat.name, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = cat.name,
+                                    text = CategoryData.getCategoryDisplayName(cat.name),
                                     fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                     color = if (isSelected) cat.color else MaterialTheme.colorScheme.onSurface
@@ -377,6 +381,43 @@ fun AddEditTransactionDialog(
                             }
                         }
                     }
+
+                    // Add New Category Chip
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.clickable { showAddCategoryDialog = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = AppStrings.addNewCategoryBtn,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                if (showAddCategoryDialog) {
+                    AddCategoryDialog(
+                        initialType = type,
+                        onDismiss = { showAddCategoryDialog = false },
+                        onCategoryCreated = { newCat ->
+                            selectedCategory = newCat.name
+                        }
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -480,4 +521,182 @@ fun AddEditTransactionDialog(
             }
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun AddCategoryDialog(
+    initialType: String,
+    onDismiss: () -> Unit,
+    onCategoryCreated: (CategoryMeta) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var isExpense by remember { mutableStateOf(initialType == TransactionType.EXPENSE.name) }
+    var selectedIcon by remember { mutableStateOf(CategoryData.availableIcons.first()) }
+    var selectedColor by remember { mutableStateOf(CategoryData.availableColors.first()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Category,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = AppStrings.addCategoryTitle,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                // Name field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(AppStrings.categoryNameLabel) },
+                    placeholder = { Text(if (FormatUtils.currentLanguage == "EN") "e.g. Coffee, Pet, Gym" else "Ví dụ: Cà phê, Thú cưng, Tập Gym") },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // Type selection
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .padding(2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isExpense) ExpenseRed else Color.Transparent)
+                            .clickable { isExpense = true }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = AppStrings.expenseToggle,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (isExpense) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (!isExpense) IncomeGreen else Color.Transparent)
+                            .clickable { isExpense = false }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = AppStrings.incomeToggle,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (!isExpense) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // Choose Icon
+                Text(
+                    text = AppStrings.categoryIconLabel,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CategoryData.availableIcons.forEach { icon ->
+                        val isSel = selectedIcon == icon
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(if (isSel) selectedColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant)
+                                .border(
+                                    width = if (isSel) 2.dp else 0.dp,
+                                    color = if (isSel) selectedColor else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedIcon = icon },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = null,
+                                tint = if (isSel) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Choose Color
+                Text(
+                    text = AppStrings.categoryColorLabel,
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    CategoryData.availableColors.forEach { color ->
+                        val isSel = selectedColor == color
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .border(
+                                    width = if (isSel) 3.dp else 0.dp,
+                                    color = if (isSel) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedColor = color }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        CategoryData.addCustomCategory(name, selectedIcon, selectedColor, isExpense)
+                        val created = CategoryData.getCategoryMeta(name)
+                        onCategoryCreated(created)
+                        onDismiss()
+                    }
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Text(AppStrings.saveTransaction, color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(AppStrings.cancel)
+            }
+        }
+    )
 }

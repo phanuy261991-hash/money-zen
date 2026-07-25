@@ -136,7 +136,7 @@ fun TransactionsScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            val allCatMetas = remember { CategoryData.expenseCategories + CategoryData.incomeCategories }
+            val allCatMetas = remember { CategoryData.getExpenseCategories() + CategoryData.getIncomeCategories() }
 
             // Category Horizontal Filter Chips
             LazyRow(
@@ -162,7 +162,7 @@ fun TransactionsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Tất cả danh mục",
+                                text = AppStrings.allCategoriesLabel,
                                 fontSize = 11.sp,
                                 fontWeight = if (isAllCategories) FontWeight.Bold else FontWeight.Normal
                             )
@@ -187,7 +187,7 @@ fun TransactionsScreen(
                             CategoryIcon(categoryName = cat.name, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = cat.name,
+                                text = CategoryData.getCategoryDisplayName(cat.name),
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) cat.color else MaterialTheme.colorScheme.onSurface
@@ -282,7 +282,7 @@ fun TransactionItemRow(
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = transaction.category,
+                        text = CategoryData.getCategoryDisplayName(transaction.category),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -220,7 +220,7 @@ fun AnalyticsBudgetScreen(
                                         CategoryIcon(categoryName = cat.categoryName, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = cat.categoryName,
+                                            text = CategoryData.getCategoryDisplayName(cat.categoryName),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Medium
                                         )
@@ -269,7 +269,7 @@ fun AnalyticsBudgetScreen(
         }
 
         // Budget Items
-        items(CategoryData.expenseCategories, key = { it.name }) { cat ->
+        items(CategoryData.getExpenseCategories(), key = { it.name }) { cat ->
             val bgProgress = budgetProgresses.find { it.categoryName == cat.name }
             val spent = bgProgress?.spentAmount ?: 0.0
             val limit = bgProgress?.budgetLimit ?: 0.0
@@ -292,7 +292,7 @@ fun AnalyticsBudgetScreen(
                             CategoryIcon(categoryName = cat.name, modifier = Modifier.size(22.dp))
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = cat.name,
+                                text = CategoryData.getCategoryDisplayName(cat.name),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )

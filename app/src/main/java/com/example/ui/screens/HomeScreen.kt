@@ -388,7 +388,7 @@ fun HomeScreen(
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Text(
-                                                text = summary.categoryName,
+                                                text = CategoryData.getCategoryDisplayName(summary.categoryName),
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Medium
                                             )
@@ -606,7 +606,7 @@ private fun TransactionItemCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = transaction.category,
+                        text = CategoryData.getCategoryDisplayName(transaction.category),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
