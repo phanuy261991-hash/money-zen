@@ -1,0 +1,7 @@
+{
+  "name": "Money Zen",
+  "description": "Money Zen - Ứng dụng quản lý tài chính cá nhân lưu trữ dữ liệu an toàn 100% trên thiết bị.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
