@@ -52,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import com.example.R
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.EmeraldPrimaryDark
@@ -92,23 +93,26 @@ fun BiometricLockScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App Icon Shield Container
+            // App Logo Container - Large, clear and vibrant
             Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = Color(0xFF111827),
-                shadowElevation = 16.dp,
+                shape = RoundedCornerShape(32.dp),
+                color = Color(0xFF0F172A),
+                shadowElevation = 20.dp,
                 modifier = Modifier
-                    .size(110.dp)
-                    .border(2.dp, EmeraldPrimaryDark, RoundedCornerShape(28.dp))
+                    .size(140.dp)
+                    .border(2.5.dp, Color(0xFF00A8FF), RoundedCornerShape(32.dp))
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize().padding(12.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.app_icon_fg),
-                        contentDescription = "Icon Bảo Mật",
-                        modifier = Modifier.fillMaxSize()
+                        painter = painterResource(id = R.drawable.app_logo),
+                        contentDescription = "Logo App",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(30.dp))
                     )
                 }
             }
