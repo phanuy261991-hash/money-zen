@@ -128,12 +128,12 @@ fun AddEditTransactionDialog(
                     datePickerState.selectedDateMillis?.let { dateMs = it }
                     showDatePicker = false
                 }) {
-                    Text("Chọn")
+                    Text(AppStrings.select)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {
-                    Text("Hủy")
+                    Text(AppStrings.cancel)
                 }
             }
         ) {

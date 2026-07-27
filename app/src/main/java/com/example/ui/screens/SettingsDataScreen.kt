@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
@@ -89,20 +91,21 @@ fun SettingsDataScreen(
     val context = LocalContext.current
     var showClearConfirmDialog by remember { mutableStateOf(false) }
     var showChangePinDialog by remember { mutableStateOf(false) }
+    var isDataExpanded by remember { mutableStateOf(false) }
     var newPinText by remember { mutableStateOf("") }
 
     if (showChangePinDialog) {
         AlertDialog(
             onDismissRequest = { showChangePinDialog = false },
-            title = { Text("Đổi Mã PIN Backup (4 chữ số)") },
+            title = { Text(AppStrings.changePinTitle) },
             text = {
                 Column {
-                    Text("Mã PIN dùng để đăng nhập dự phòng khi sinh trắc học không sẵn sàng.")
+                    Text(AppStrings.changePinDesc)
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = newPinText,
                         onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) newPinText = it },
-                        label = { Text("Nhập PIN 4 số mới") },
+                        label = { Text(AppStrings.newPinLabel) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -113,19 +116,19 @@ fun SettingsDataScreen(
                     onClick = {
                         if (newPinText.length == 4) {
                             onChangePin(newPinText)
-                            Toast.makeText(context, "Đã cập nhật mã PIN mới!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (currentLanguage == "EN") "PIN updated successfully!" else "Đã cập nhật mã PIN mới!", Toast.LENGTH_SHORT).show()
                             showChangePinDialog = false
                             newPinText = ""
                         }
                     },
                     enabled = newPinText.length == 4
                 ) {
-                    Text("Lưu PIN")
+                    Text(AppStrings.savePin)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showChangePinDialog = false }) {
-                    Text("Hủy")
+                    Text(AppStrings.cancel)
                 }
             }
         )
@@ -134,24 +137,24 @@ fun SettingsDataScreen(
     if (showClearConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showClearConfirmDialog = false },
-            title = { Text("Xóa Toàn Bộ Dữ Liệu?") },
-            text = { Text("Hành động này sẽ xóa tất cả giao dịch và ngân sách trên thiết bị của bạn. Không thể hoàn tác.") },
+            title = { Text(AppStrings.clearDataTitle) },
+            text = { Text(AppStrings.clearDataMsg) },
             confirmButton = {
                 Button(
                     onClick = {
                         onClearAllData()
                         showClearConfirmDialog = false
-                        Toast.makeText(context, "Đã xóa toàn bộ dữ liệu", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (currentLanguage == "EN") "All data cleared!" else "Đã xóa toàn bộ dữ liệu", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed),
                     modifier = Modifier.testTag("confirm_clear_data_btn")
                 ) {
-                    Text("Xóa Ngay")
+                    Text(AppStrings.clearDataConfirm)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearConfirmDialog = false }) {
-                    Text("Hủy")
+                    Text(AppStrings.cancel)
                 }
             }
         )
@@ -178,21 +181,21 @@ fun SettingsDataScreen(
                 ) {
                     Icon(
                         Icons.Default.Security,
-                        contentDescription = "Bảo mật",
+                        contentDescription = AppStrings.privacyBannerTitle,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(36.dp)
                     )
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Lưu Trữ Cục Bộ (Local Only)",
+                            text = AppStrings.privacyBannerTitle,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Toàn bộ dữ liệu tài chính của bạn được mã hóa và lưu trực tiếp trong cơ sở dữ liệu SQLite (Room) trên điện thoại, hoàn toàn không đẩy lên máy chủ backend.",
+                            text = AppStrings.privacyBannerDesc,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                         )
@@ -484,95 +487,122 @@ fun SettingsDataScreen(
             }
         }
 
-        // Data Management Card
+        // Data Management Card (Expandable Accordion)
         item {
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("data_management_card")
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "${AppStrings.dataTitle} ($totalTransactionsCount)",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Export CSV Option
-                    Button(
-                        onClick = {
-                            val csvData = onGetCsvData()
-                            val sendIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, csvData)
-                                type = "text/csv"
-                            }
-                            val shareIntent = Intent.createChooser(sendIntent, AppStrings.exportCsv)
-                            context.startActivity(shareIntent)
-                        },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .testTag("export_csv_btn"),
-                        shape = RoundedCornerShape(12.dp)
+                            .clickable { isDataExpanded = !isDataExpanded },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(AppStrings.exportCsv)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "${AppStrings.dataTitle} ($totalTransactionsCount)",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isDataExpanded) AppStrings.collapseDataOptions else AppStrings.expandDataOptions,
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Icon(
+                            imageVector = if (isDataExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    if (isDataExpanded) {
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    // Copy CSV to Clipboard
-                    OutlinedButton(
-                        onClick = {
-                            val csvData = onGetCsvData()
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Finance_CSV", csvData)
-                            clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, if (currentLanguage == "EN") "CSV copied to clipboard!" else "Đã sao chép dữ liệu CSV vào bộ nhớ tạm!", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (currentLanguage == "EN") "Copy CSV Data" else "Sao Chép Dữ Liệu CSV")
-                    }
+                        // 1. Export CSV Option
+                        Button(
+                            onClick = {
+                                val csvData = onGetCsvData()
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, csvData)
+                                    type = "text/csv"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, AppStrings.exportCsv)
+                                context.startActivity(shareIntent)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("export_csv_btn"),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(AppStrings.exportCsv)
+                        }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Import Sample Data Button
-                    OutlinedButton(
-                        onClick = {
-                            onInsertSampleData()
-                            Toast.makeText(context, if (currentLanguage == "EN") "Sample data added!" else "Đã tạo thêm dữ liệu mẫu!", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("import_sample_data_btn"),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(AppStrings.insertSample)
-                    }
+                        // 2. Copy CSV to Clipboard
+                        OutlinedButton(
+                            onClick = {
+                                val csvData = onGetCsvData()
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("Finance_CSV", csvData)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, if (currentLanguage == "EN") "CSV copied to clipboard!" else "Đã sao chép dữ liệu CSV vào bộ nhớ tạm!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(AppStrings.copyCsv)
+                        }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    // Clear All Data
-                    Button(
-                        onClick = { showClearConfirmDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed.copy(alpha = 0.1f), contentColor = ExpenseRed),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("clear_all_data_btn"),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(AppStrings.clearAll, fontWeight = FontWeight.Bold)
+                        // 3. Import Sample Data Button
+                        OutlinedButton(
+                            onClick = {
+                                onInsertSampleData()
+                                Toast.makeText(context, if (currentLanguage == "EN") "Sample data added!" else "Đã tạo thêm dữ liệu mẫu!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("import_sample_data_btn"),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(AppStrings.insertSample)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // 4. Clear All Data
+                        Button(
+                            onClick = { showClearConfirmDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = ExpenseRed.copy(alpha = 0.1f), contentColor = ExpenseRed),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("clear_all_data_btn"),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(AppStrings.clearAll, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -596,18 +626,19 @@ fun SettingsDataScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Thông Tin Ứng Dụng",
+                            text = AppStrings.aboutAppTitle,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "Ứng dụng Quản Lý Tài Chính Cá Nhân Offline",
+                        text = AppStrings.appNameDesc,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Phiên bản: 1.0.0 • Công nghệ: Jetpack Compose + Room SQLite Database",
+                        text = AppStrings.appVersion,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -72,6 +72,7 @@ import com.example.data.model.SavingsGoalEntity
 import com.example.data.model.WalletEntity
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.ExpenseRed
+import com.example.ui.viewmodel.WalletBudgetProgress
 import com.example.utils.AppStrings
 import com.example.utils.FormatUtils
 
@@ -81,7 +82,13 @@ fun WalletsToolsScreen(
     debts: List<DebtEntity>,
     savingsGoals: List<SavingsGoalEntity>,
     recurringBills: List<RecurringBillEntity>,
-    onAddWallet: (name: String, type: String, initialBalance: Double) -> Unit,
+    walletBudgetProgresses: List<WalletBudgetProgress> = emptyList(),
+    overallMonthlyLimit: Double = 0.0,
+    overallMonthlySpent: Double = 0.0,
+    isOverallOverLimit: Boolean = false,
+    onAddWallet: (name: String, type: String, initialBalance: Double, monthlyLimit: Double) -> Unit,
+    onSetWalletLimit: (walletId: Long, limit: Double) -> Unit = { _, _ -> },
+    onSetOverallLimit: (limit: Double) -> Unit = {},
     onDeleteWallet: (WalletEntity) -> Unit,
     onTransferMoney: (fromWalletId: Long, toWalletId: Long, amount: Double, note: String) -> Unit,
     onAddDebt: (personName: String, amount: Double, type: String, note: String, walletId: Long) -> Unit,
@@ -106,6 +113,8 @@ fun WalletsToolsScreen(
     var showAddDebtDialog by remember { mutableStateOf(false) }
     var showAddGoalDialog by remember { mutableStateOf(false) }
     var showAddBillDialog by remember { mutableStateOf(false) }
+    var showSetOverallLimitDialog by remember { mutableStateOf(false) }
+    var walletForLimitDialog by remember { mutableStateOf<WalletEntity?>(null) }
 
     Column(
         modifier = Modifier
@@ -146,8 +155,14 @@ fun WalletsToolsScreen(
             when (selectedTabIndex) {
                 0 -> WalletsTabContent(
                     wallets = wallets,
+                    walletBudgetProgresses = walletBudgetProgresses,
+                    overallMonthlyLimit = overallMonthlyLimit,
+                    overallMonthlySpent = overallMonthlySpent,
+                    isOverallOverLimit = isOverallOverLimit,
                     onOpenAddWallet = { showAddWalletDialog = true },
                     onOpenTransfer = { showTransferDialog = true },
+                    onOpenSetOverallLimit = { showSetOverallLimitDialog = true },
+                    onOpenSetWalletLimit = { walletForLimitDialog = it },
                     onDeleteWallet = onDeleteWallet
                 )
                 1 -> DebtsTabContent(
@@ -175,8 +190,8 @@ fun WalletsToolsScreen(
     if (showAddWalletDialog) {
         AddWalletDialog(
             onDismiss = { showAddWalletDialog = false },
-            onSave = { name, type, balance ->
-                onAddWallet(name, type, balance)
+            onSave = { name, type, balance, monthlyLimit ->
+                onAddWallet(name, type, balance, monthlyLimit)
                 showAddWalletDialog = false
             }
         )
@@ -224,13 +239,41 @@ fun WalletsToolsScreen(
             }
         )
     }
+
+    if (showSetOverallLimitDialog) {
+        SetOverallLimitDialog(
+            currentLimit = overallMonthlyLimit,
+            onDismiss = { showSetOverallLimitDialog = false },
+            onSaveLimit = { limit ->
+                onSetOverallLimit(limit)
+                showSetOverallLimitDialog = false
+            }
+        )
+    }
+
+    walletForLimitDialog?.let { wallet ->
+        SetWalletLimitDialog(
+            wallet = wallet,
+            onDismiss = { walletForLimitDialog = null },
+            onSaveLimit = { limit ->
+                onSetWalletLimit(wallet.id, limit)
+                walletForLimitDialog = null
+            }
+        )
+    }
 }
 
 @Composable
 private fun WalletsTabContent(
     wallets: List<WalletEntity>,
+    walletBudgetProgresses: List<WalletBudgetProgress>,
+    overallMonthlyLimit: Double,
+    overallMonthlySpent: Double,
+    isOverallOverLimit: Boolean,
     onOpenAddWallet: () -> Unit,
     onOpenTransfer: () -> Unit,
+    onOpenSetOverallLimit: () -> Unit,
+    onOpenSetWalletLimit: (WalletEntity) -> Unit,
     onDeleteWallet: (WalletEntity) -> Unit
 ) {
     var walletToDelete by remember { mutableStateOf<WalletEntity?>(null) }
@@ -317,6 +360,76 @@ private fun WalletsTabContent(
             }
         }
 
+        // Overall Monthly Limit Banner / Card
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isOverallOverLimit) ExpenseRed.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant
+                ),
+                border = if (isOverallOverLimit) androidx.compose.foundation.BorderStroke(1.5.dp, ExpenseRed) else null,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = AppStrings.overallLimitTitle,
+                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                color = if (isOverallOverLimit) ExpenseRed else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (isOverallOverLimit) {
+                                Text(
+                                    text = "⚠️ ${AppStrings.limitWarningOverall}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = ExpenseRed
+                                )
+                            }
+                        }
+
+                        TextButton(onClick = onOpenSetOverallLimit) {
+                            Text(if (overallMonthlyLimit > 0) AppStrings.setOverallLimit else AppStrings.noLimitSet)
+                        }
+                    }
+
+                    if (overallMonthlyLimit > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${AppStrings.expense}: ${FormatUtils.formatCurrency(overallMonthlySpent)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isOverallOverLimit) ExpenseRed else MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Limit: ${FormatUtils.formatCurrency(overallMonthlyLimit)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val ratio = (overallMonthlySpent / overallMonthlyLimit).toFloat().coerceIn(0f, 1f)
+                        LinearProgressIndicator(
+                            progress = { ratio },
+                            color = if (isOverallOverLimit) ExpenseRed else EmeraldPrimary,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                    }
+                }
+            }
+        }
+
         item {
             Text(
                 text = "${AppStrings.tabWalletsList} (${wallets.size})",
@@ -326,72 +439,121 @@ private fun WalletsTabContent(
         }
 
         items(wallets, key = { it.id }) { wallet ->
+            val wProgress = walletBudgetProgresses.find { it.wallet.id == wallet.id }
+            val spent = wProgress?.spentAmount ?: 0.0
+            val limit = wallet.monthlyLimit
+            val isOver = wProgress?.isOverLimit ?: false
+
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = if (isOver) androidx.compose.foundation.BorderStroke(1.5.dp, ExpenseRed) else null,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val (icon, color) = when (wallet.type) {
-                        "NGAN_HANG" -> Icons.Default.AccountBalance to Color(0xFF2563EB)
-                        "VI_DIEN_TU" -> Icons.Default.Smartphone to Color(0xFFEC4899)
-                        "THE_TIN_DUNG" -> Icons.Default.CreditCard to Color(0xFFF59E0B)
-                        else -> Icons.Default.Payments to Color(0xFF10B981)
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(color.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = wallet.name,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        val typeLabel = when (wallet.type) {
-                            "NGAN_HANG" -> AppStrings.typeBank
-                            "VI_DIEN_TU" -> AppStrings.typeEWallet
-                            "THE_TIN_DUNG" -> AppStrings.typeCredit
-                            else -> AppStrings.typeCash
+                        val (icon, color) = when (wallet.type) {
+                            "NGAN_HANG" -> Icons.Default.AccountBalance to Color(0xFF2563EB)
+                            "VI_DIEN_TU" -> Icons.Default.Smartphone to Color(0xFFEC4899)
+                            "THE_TIN_DUNG" -> Icons.Default.CreditCard to Color(0xFFF59E0B)
+                            else -> Icons.Default.Payments to Color(0xFF10B981)
                         }
-                        Text(
-                            text = typeLabel,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = FormatUtils.formatCurrency(wallet.balance),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = if (wallet.balance >= 0) MaterialTheme.colorScheme.onSurface else ExpenseRed
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        IconButton(
-                            onClick = { walletToDelete = wallet },
-                            modifier = Modifier.size(32.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(color.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.DeleteOutline,
-                                contentDescription = AppStrings.deleteBtn,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                modifier = Modifier.size(20.dp)
+                            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = wallet.name,
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                            val typeLabel = when (wallet.type) {
+                                "NGAN_HANG" -> AppStrings.typeBank
+                                "VI_DIEN_TU" -> AppStrings.typeEWallet
+                                "THE_TIN_DUNG" -> AppStrings.typeCredit
+                                else -> AppStrings.typeCash
+                            }
+                            Text(
+                                text = typeLabel,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = FormatUtils.formatCurrency(wallet.balance),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = if (wallet.balance >= 0) MaterialTheme.colorScheme.onSurface else ExpenseRed
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(
+                                    onClick = { onOpenSetWalletLimit(wallet) },
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text(
+                                        text = if (limit > 0) "${AppStrings.walletMonthlyLimit}: ${FormatUtils.formatCurrency(limit)}" else "+ ${AppStrings.walletMonthlyLimit}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { walletToDelete = wallet },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteOutline,
+                                        contentDescription = AppStrings.deleteBtn,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (limit > 0) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "${AppStrings.expense}: ${FormatUtils.formatCurrency(spent)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (isOver) ExpenseRed else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            if (isOver) {
+                                Text(
+                                    text = "⚠️ ${AppStrings.limitWarningWallet}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = ExpenseRed
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val ratio = (spent / limit).toFloat().coerceIn(0f, 1f)
+                        LinearProgressIndicator(
+                            progress = { ratio },
+                            color = if (isOver) ExpenseRed else EmeraldPrimary,
+                            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                        )
                     }
                 }
             }
@@ -464,7 +626,7 @@ private fun DebtsTabContent(
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(if (FormatUtils.currentLanguage == "EN") "Add Debt" else "Ghi Nợ Mới")
+                            Text(AppStrings.addDebtTitle)
                         }
                     }
 
@@ -472,7 +634,10 @@ private fun DebtsTabContent(
 
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(if (FormatUtils.currentLanguage == "EN") "Lent (To Collect)" else "Cho Vay (Cần thu)", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                text = if (FormatUtils.currentLanguage == "EN") "Lent (To Collect)" else "Cho Vay (Cần thu)",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             Text(
                                 FormatUtils.formatCurrency(totalLent),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -481,7 +646,10 @@ private fun DebtsTabContent(
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(if (FormatUtils.currentLanguage == "EN") "Borrowed (To Pay)" else "Đi Vay (Cần trả)", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                text = if (FormatUtils.currentLanguage == "EN") "Borrowed (To Pay)" else "Đi Vay (Cần trả)",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                             Text(
                                 FormatUtils.formatCurrency(totalBorrowed),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -499,27 +667,27 @@ private fun DebtsTabContent(
                 colors = CardDefaults.cardColors(
                     containerColor = if (debt.isSettled) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isLent = debt.type == "CHO_VAY"
-                    val tagColor = if (isLent) EmeraldPrimary else ExpenseRed
+                    val isLend = debt.type == "CHO_VAY"
+                    val iconColor = if (isLend) EmeraldPrimary else ExpenseRed
 
                     Box(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(CircleShape)
-                            .background(tagColor.copy(alpha = 0.15f)),
+                            .background(iconColor.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (isLent) Icons.Default.MonetizationOn else Icons.Default.Receipt,
+                            imageVector = if (isLend) Icons.Default.MonetizationOn else Icons.Default.CreditCard,
                             contentDescription = null,
-                            tint = tagColor,
+                            tint = iconColor,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -527,47 +695,44 @@ private fun DebtsTabContent(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = debt.personName,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            if (debt.isSettled) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Surface(
-                                    color = EmeraldPrimary.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        if (FormatUtils.currentLanguage == "EN") "Settled" else "Đã xong",
-                                        color = EmeraldPrimary,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                        val debtTypeStr = if (isLent) {
-                            if (FormatUtils.currentLanguage == "EN") "Lent" else "Cho vay"
-                        } else {
-                            if (FormatUtils.currentLanguage == "EN") "Borrowed" else "Đi vay"
-                        }
                         Text(
-                            text = "$debtTypeStr • ${debt.note}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = debt.personName,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
+                        Text(
+                            text = if (isLend) AppStrings.lendBtn else AppStrings.borrowBtn,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = iconColor
+                        )
+                        if (debt.note.isNotBlank()) {
+                            Text(
+                                text = debt.note,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = FormatUtils.formatCurrency(debt.amount),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = iconColor
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = FormatUtils.formatCurrency(debt.amount),
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                color = tagColor
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            if (!debt.isSettled) {
+                                TextButton(onClick = { onSettleDebt(debt) }) {
+                                    Text(AppStrings.settleDebtBtn, fontSize = 12.sp)
+                                }
+                            } else {
+                                Text(
+                                    AppStrings.settledLabel,
+                                    fontSize = 12.sp,
+                                    color = EmeraldPrimary,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                            }
+
                             IconButton(
                                 onClick = { debtToDelete = debt },
                                 modifier = Modifier.size(28.dp)
@@ -578,23 +743,6 @@ private fun DebtsTabContent(
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.size(18.dp)
                                 )
-                            }
-                        }
-
-                        if (!debt.isSettled) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Button(
-                                onClick = { onSettleDebt(debt) },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = tagColor),
-                                modifier = Modifier.height(30.dp)
-                            ) {
-                                val settleBtnLabel = if (isLent) {
-                                    if (FormatUtils.currentLanguage == "EN") "Collect" else "Thu Nợ"
-                                } else {
-                                    if (FormatUtils.currentLanguage == "EN") "Pay Off" else "Trả Nợ"
-                                }
-                                Text(settleBtnLabel, fontSize = 11.sp)
                             }
                         }
                     }
@@ -649,7 +797,7 @@ private fun SavingsTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = AppStrings.tabSavings,
+                    text = AppStrings.savingsGoals,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Button(
@@ -658,15 +806,13 @@ private fun SavingsTabContent(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (FormatUtils.currentLanguage == "EN") "New Goal" else "Mục Tiêu Mới")
+                    Text(AppStrings.addGoalTitle)
                 }
             }
         }
 
         items(savingsGoals, key = { it.id }) { goal ->
             val ratio = if (goal.targetAmount > 0) (goal.currentAmount / goal.targetAmount).toFloat().coerceIn(0f, 1f) else 0f
-            val percentInt = (ratio * 100).toInt()
-
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -674,43 +820,41 @@ private fun SavingsTabContent(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Savings,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(EmeraldPrimary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Savings, contentDescription = null, tint = EmeraldPrimary, modifier = Modifier.size(20.dp))
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = goal.title,
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
+                            Text(
+                                text = "${FormatUtils.formatCurrency(goal.currentAmount)} / ${FormatUtils.formatCurrency(goal.targetAmount)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "$percentInt%",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
+                        IconButton(
+                            onClick = { goalToDelete = goal },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DeleteOutline,
+                                contentDescription = AppStrings.deleteBtn,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = { goalToDelete = goal },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.DeleteOutline,
-                                    contentDescription = AppStrings.deleteBtn,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
                         }
                     }
 
@@ -718,31 +862,13 @@ private fun SavingsTabContent(
 
                     LinearProgressIndicator(
                         progress = { ratio },
+                        color = EmeraldPrimary,
+                        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
-                            .clip(CircleShape),
-                        color = EmeraldPrimary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                            .clip(RoundedCornerShape(4.dp))
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${if (FormatUtils.currentLanguage == "EN") "Saved" else "Đã tiết kiệm"}: ${FormatUtils.formatCurrency(goal.currentAmount)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "${if (FormatUtils.currentLanguage == "EN") "Target" else "Mục tiêu"}: ${FormatUtils.formatCurrency(goal.targetAmount)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
@@ -795,135 +921,83 @@ private fun BillsTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = AppStrings.recurringBillsManagement,
+                    text = AppStrings.recurringBills,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
-
                 Button(
                     onClick = onOpenAddBill,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
-                    modifier = Modifier.testTag("add_recurring_bill_btn")
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(if (FormatUtils.currentLanguage == "EN") "Add Bill" else "Thêm Hóa Đơn", fontSize = 12.sp)
+                    Text(AppStrings.addBillTitle)
                 }
             }
         }
 
-        if (bills.isEmpty()) {
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+        items(bills, key = { it.id }) { bill ->
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(ExpenseRed.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Receipt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (FormatUtils.currentLanguage == "EN") "No recurring bills yet" else "Chưa có hóa đơn định kỳ nào",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = if (FormatUtils.currentLanguage == "EN") "Add bills like electricity, water, internet to get payment reminders." else "Thêm hóa đơn như điện, nước, internet để nhận nhắc nhở thanh toán.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
-                        )
-                        Button(
-                            onClick = onOpenAddBill,
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text(if (FormatUtils.currentLanguage == "EN") "Add New Bill" else "Thêm Hóa Đơn Mới")
-                        }
+                        Icon(Icons.Default.Receipt, contentDescription = null, tint = ExpenseRed, modifier = Modifier.size(22.dp))
                     }
-                }
-            }
-        } else {
-            items(bills, key = { it.id }) { bill ->
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Receipt,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = bill.title,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
+                        Text(
+                            text = "${bill.category} • ${bill.frequency}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = bill.title,
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = "${bill.frequency} • ${bill.category}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Column(horizontalAlignment = Alignment.End) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = FormatUtils.formatCurrency(bill.amount),
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                IconButton(
-                                    onClick = { billToDelete = bill },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DeleteOutline,
-                                        contentDescription = AppStrings.deleteBtn,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = FormatUtils.formatCurrency(bill.amount),
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = ExpenseRed
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Button(
+                                onClick = { onPayBill(bill) },
+                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(AppStrings.payBillBtn, fontSize = 11.sp)
                             }
 
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            if (bill.isPaid) {
-                                Text(AppStrings.paid, color = EmeraldPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            } else {
-                                Button(
-                                    onClick = { onPayBill(bill) },
-                                    shape = RoundedCornerShape(8.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
-                                    modifier = Modifier.height(30.dp)
-                                ) {
-                                    Text(if (FormatUtils.currentLanguage == "EN") "Pay Now" else "Trả Ngay", fontSize = 11.sp)
-                                }
+                            IconButton(
+                                onClick = { billToDelete = bill },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteOutline,
+                                    contentDescription = AppStrings.deleteBtn,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     }
@@ -935,6 +1009,7 @@ private fun BillsTabContent(
     }
 }
 
+// Localized Dialogs
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddRecurringBillDialog(
@@ -944,12 +1019,21 @@ private fun AddRecurringBillDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var amountText by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf("Tiền điện") }
-    var selectedFrequency by remember { mutableStateOf("Hàng tháng") }
+    var selectedCategory by remember { mutableStateOf(if (FormatUtils.currentLanguage == "EN") "Electricity" else "Tiền điện") }
+    var selectedFrequency by remember { mutableStateOf(if (FormatUtils.currentLanguage == "EN") "Monthly" else "Hàng tháng") }
     var selectedWalletId by remember { mutableStateOf(wallets.firstOrNull()?.id ?: 1L) }
 
-    val categories = listOf("Tiền điện", "Tiền nước", "Internet", "Tiền nhà", "Tiền học", "Khác")
-    val frequencies = listOf("Hàng tháng", "Hàng tuần", "Hàng năm")
+    val categories = if (FormatUtils.currentLanguage == "EN") {
+        listOf("Electricity", "Water", "Internet", "Rent", "Tuition", "Other")
+    } else {
+        listOf("Tiền điện", "Tiền nước", "Internet", "Tiền nhà", "Tiền học", "Khác")
+    }
+
+    val frequencies = if (FormatUtils.currentLanguage == "EN") {
+        listOf("Monthly", "Weekly", "Yearly")
+    } else {
+        listOf("Hàng tháng", "Hàng tuần", "Hàng năm")
+    }
 
     var catExpanded by remember { mutableStateOf(false) }
     var freqExpanded by remember { mutableStateOf(false) }
@@ -957,13 +1041,13 @@ private fun AddRecurringBillDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Thêm Hóa Đơn Định Kỳ", fontWeight = FontWeight.Bold) },
+        title = { Text(AppStrings.addBillTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Tên hóa đơn (VD: Điện T8)") },
+                    label = { Text(AppStrings.billTitleLabel) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -971,13 +1055,12 @@ private fun AddRecurringBillDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Số tiền (₫)") },
+                    label = { Text("${AppStrings.amountLabel}") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Category Dropdown
                 ExposedDropdownMenuBox(
                     expanded = catExpanded,
                     onExpandedChange = { catExpanded = !catExpanded }
@@ -986,11 +1069,9 @@ private fun AddRecurringBillDialog(
                         value = selectedCategory,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Danh mục") },
+                        label = { Text(AppStrings.categoryLabel) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = catExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = catExpanded,
@@ -1008,7 +1089,6 @@ private fun AddRecurringBillDialog(
                     }
                 }
 
-                // Frequency Dropdown
                 ExposedDropdownMenuBox(
                     expanded = freqExpanded,
                     onExpandedChange = { freqExpanded = !freqExpanded }
@@ -1017,11 +1097,9 @@ private fun AddRecurringBillDialog(
                         value = selectedFrequency,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Tần suất thanh toán") },
+                        label = { Text(AppStrings.frequencyLabel) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = freqExpanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
                     ExposedDropdownMenu(
                         expanded = freqExpanded,
@@ -1039,7 +1117,6 @@ private fun AddRecurringBillDialog(
                     }
                 }
 
-                // Wallet Selection
                 if (wallets.isNotEmpty()) {
                     val currentWallet = wallets.find { it.id == selectedWalletId } ?: wallets.first()
                     ExposedDropdownMenuBox(
@@ -1050,11 +1127,9 @@ private fun AddRecurringBillDialog(
                             value = currentWallet.name,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Trích từ ví") },
+                            label = { Text(AppStrings.deductWalletLabel) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = walletExpanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth()
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
                         )
                         ExposedDropdownMenu(
                             expanded = walletExpanded,
@@ -1085,18 +1160,17 @@ private fun AddRecurringBillDialog(
                 },
                 enabled = title.isNotBlank() || amountText.isNotBlank()
             ) {
-                Text("Lưu Hóa Đơn")
+                Text(AppStrings.saveBill)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Hủy")
+                Text(AppStrings.cancel)
             }
         }
     )
 }
 
-// Dialog Composable Helpers
 private data class WalletTypeOption(
     val code: String,
     val label: String,
@@ -1107,11 +1181,12 @@ private data class WalletTypeOption(
 @Composable
 private fun AddWalletDialog(
     onDismiss: () -> Unit,
-    onSave: (name: String, type: String, balance: Double) -> Unit
+    onSave: (name: String, type: String, balance: Double, monthlyLimit: Double) -> Unit
 ) {
     var walletName by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("TIEN_MAT") }
     var balanceText by remember { mutableStateOf("") }
+    var limitText by remember { mutableStateOf("") }
 
     val walletTypes = listOf(
         WalletTypeOption(
@@ -1158,7 +1233,7 @@ private fun AddWalletDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = walletName,
                     onValueChange = { walletName = it },
@@ -1174,7 +1249,6 @@ private fun AddWalletDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                // 2x2 Grid of prominent Wallet Type Cards
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val rows = walletTypes.chunked(2)
                     rows.forEach { rowItems ->
@@ -1196,12 +1270,12 @@ private fun AddWalletDialog(
                                         .clickable { selectedType = option.code }
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(32.dp)
+                                                .size(28.dp)
                                                 .clip(CircleShape)
                                                 .background(if (isSel) option.color else MaterialTheme.colorScheme.surfaceVariant),
                                             contentAlignment = Alignment.Center
@@ -1210,10 +1284,10 @@ private fun AddWalletDialog(
                                                 imageVector = option.icon,
                                                 contentDescription = null,
                                                 tint = if (isSel) Color.White else option.color,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         }
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
                                             text = option.label,
                                             fontSize = 12.sp,
@@ -1236,14 +1310,24 @@ private fun AddWalletDialog(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                OutlinedTextField(
+                    value = limitText,
+                    onValueChange = { limitText = it },
+                    label = { Text(AppStrings.walletMonthlyLimitSetting) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
                     val bal = balanceText.toDoubleOrNull() ?: 0.0
+                    val limit = limitText.toDoubleOrNull() ?: 0.0
                     if (walletName.isNotBlank()) {
-                        onSave(walletName, selectedType, bal)
+                        onSave(walletName, selectedType, bal, limit)
                     }
                 },
                 shape = RoundedCornerShape(10.dp),
@@ -1272,16 +1356,16 @@ private fun TransferMoneyDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Chuyển Tiền Giữa Các Ví") },
+        title = { Text(AppStrings.transferTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Ví gửi (Trừ tiền): ${fromWallet.name}", fontWeight = FontWeight.Bold)
-                Text("Ví nhận (Cộng tiền): ${toWallet.name}", fontWeight = FontWeight.Bold)
+                Text("${AppStrings.fromWalletLabel}: ${fromWallet.name}", fontWeight = FontWeight.Bold)
+                Text("${AppStrings.toWalletLabel}: ${toWallet.name}", fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Số tiền chuyển (VND)") },
+                    label = { Text(AppStrings.transferAmountLabel) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1289,7 +1373,7 @@ private fun TransferMoneyDialog(
                 OutlinedTextField(
                     value = noteText,
                     onValueChange = { noteText = it },
-                    label = { Text("Ghi chú") },
+                    label = { Text(AppStrings.noteLabel) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -1303,11 +1387,11 @@ private fun TransferMoneyDialog(
                     }
                 }
             ) {
-                Text("Xác Nhận Chuyển")
+                Text(AppStrings.confirmTransfer)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Hủy") }
+            TextButton(onClick = onDismiss) { Text(AppStrings.cancel) }
         }
     )
 }
@@ -1325,13 +1409,13 @@ private fun AddDebtDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Thêm Ghi Nợ Mới") },
+        title = { Text(AppStrings.addDebtTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = personName,
                     onValueChange = { personName = it },
-                    label = { Text("Tên người vay / cho vay") },
+                    label = { Text(AppStrings.personNameLabel) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -1341,22 +1425,22 @@ private fun AddDebtDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = if (debtType == "CHO_VAY") EmeraldPrimary else Color.Gray),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cho Vay")
+                        Text(AppStrings.lendBtn)
                     }
 
                     Button(
                         onClick = { debtType = "DI_VAY" },
-                        colors = ButtonDefaults.buttonColors(containerColor = if (debtType == "DI_VAY") Color.Red else Color.Gray),
+                        colors = ButtonDefaults.buttonColors(containerColor = if (debtType == "DI_VAY") ExpenseRed else Color.Gray),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Đi Vay")
+                        Text(AppStrings.borrowBtn)
                     }
                 }
 
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Số tiền (VND)") },
+                    label = { Text("${AppStrings.amountLabel}") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1364,7 +1448,7 @@ private fun AddDebtDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Ghi chú lý do") },
+                    label = { Text(AppStrings.noteReasonLabel) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -1378,11 +1462,11 @@ private fun AddDebtDialog(
                     }
                 }
             ) {
-                Text("Lưu Sổ Nợ")
+                Text(AppStrings.saveDebt)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Hủy") }
+            TextButton(onClick = onDismiss) { Text(AppStrings.cancel) }
         }
     )
 }
@@ -1397,20 +1481,20 @@ private fun AddSavingsGoalDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Tạo Mục Tiêu Tiết Kiệm Mới") },
+        title = { Text(AppStrings.addGoalTitle, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Tên mục tiêu (Ví dụ: Mua iPhone, Du lịch)") },
+                    label = { Text(AppStrings.goalTitleLabel) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = targetText,
                     onValueChange = { targetText = it },
-                    label = { Text("Số tiền mục tiêu cần đạt (VND)") },
+                    label = { Text(AppStrings.targetAmountLabel) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1425,11 +1509,95 @@ private fun AddSavingsGoalDialog(
                     }
                 }
             ) {
-                Text("Tạo Mục Tiêu")
+                Text(AppStrings.createGoal)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Hủy") }
+            TextButton(onClick = onDismiss) { Text(AppStrings.cancel) }
+        }
+    )
+}
+
+@Composable
+private fun SetWalletLimitDialog(
+    wallet: WalletEntity,
+    onDismiss: () -> Unit,
+    onSaveLimit: (Double) -> Unit
+) {
+    var limitText by remember { mutableStateOf(if (wallet.monthlyLimit > 0) String.format("%.0f", wallet.monthlyLimit) else "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${AppStrings.walletMonthlyLimit}: ${wallet.name}", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = AppStrings.walletMonthlyLimitSetting,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = limitText,
+                    onValueChange = { limitText = it },
+                    label = { Text("${AppStrings.amountLabel}") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val limit = limitText.toDoubleOrNull() ?: 0.0
+                    onSaveLimit(limit)
+                }
+            ) {
+                Text(AppStrings.saveTransaction)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(AppStrings.cancel) }
+        }
+    )
+}
+
+@Composable
+private fun SetOverallLimitDialog(
+    currentLimit: Double,
+    onDismiss: () -> Unit,
+    onSaveLimit: (Double) -> Unit
+) {
+    var limitText by remember { mutableStateOf(if (currentLimit > 0) String.format("%.0f", currentLimit) else "") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(AppStrings.setOverallLimit, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = AppStrings.overallLimitTitle,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                OutlinedTextField(
+                    value = limitText,
+                    onValueChange = { limitText = it },
+                    label = { Text(AppStrings.walletMonthlyLimitSetting) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val limit = limitText.toDoubleOrNull() ?: 0.0
+                    onSaveLimit(limit)
+                }
+            ) {
+                Text(AppStrings.saveTransaction)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(AppStrings.cancel) }
         }
     )
 }

@@ -50,6 +50,14 @@ data class BudgetProgress(
     val isOverBudget: Boolean
 )
 
+data class WalletBudgetProgress(
+    val wallet: WalletEntity,
+    val spentAmount: Double,
+    val budgetLimit: Double,
+    val ratio: Float,
+    val isOverLimit: Boolean
+)
+
 data class MonthComparisonData(
     val thisMonthIncome: Double = 0.0,
     val thisMonthExpense: Double = 0.0,
@@ -383,6 +391,54 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
         }.sortedByDescending { it.ratio }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Overall Monthly Spending Limit (0 = disabled)
+    val overallMonthlyLimit = MutableStateFlow(
+        prefs.getFloat("overall_monthly_limit", 0f).toDouble()
+    )
+
+    fun setOverallMonthlyLimit(limit: Double) {
+        overallMonthlyLimit.value = limit
+        prefs.edit().putFloat("overall_monthly_limit", limit.toFloat()).apply()
+    }
+
+    // Current month expenses grouped by walletId
+    val walletMonthlySpent: StateFlow<Map<Long, Double>> = rawTransactions.map { txs ->
+        val now = System.currentTimeMillis()
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = now
+        val currentMonth = cal.get(Calendar.MONTH)
+        val currentYear = cal.get(Calendar.YEAR)
+
+        txs.filter { tx ->
+            tx.type == TransactionType.EXPENSE.name && run {
+                cal.timeInMillis = tx.date
+                cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear
+            }
+        }.groupBy { it.walletId }
+         .mapValues { entry -> entry.value.sumOf { it.amount } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
+    // Wallet Budget Progress Tracker
+    val walletBudgetProgresses: StateFlow<List<WalletBudgetProgress>> = combine(wallets, walletMonthlySpent) { wList, spentMap ->
+        wList.map { w ->
+            val spent = spentMap[w.id] ?: 0.0
+            val limit = w.monthlyLimit
+            val ratio = if (limit > 0) (spent / limit).toFloat() else 0f
+            WalletBudgetProgress(
+                wallet = w,
+                spentAmount = spent,
+                budgetLimit = limit,
+                ratio = ratio,
+                isOverLimit = limit > 0 && spent > limit
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Overall Monthly Spending Limit Alert State
+    val isOverallOverLimit: StateFlow<Boolean> = combine(totalExpense, overallMonthlyLimit) { spent, limit ->
+        limit > 0 && spent > limit
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     // Actions
     fun addTransaction(
         title: String,
@@ -431,13 +487,14 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     }
 
     // Money Lover Wallet Actions
-    fun addWallet(name: String, type: String, initialBalance: Double) {
+    fun addWallet(name: String, type: String, initialBalance: Double, monthlyLimit: Double = 0.0) {
         viewModelScope.launch {
             repository.insertWallet(
                 WalletEntity(
                     name = name,
                     type = type,
                     balance = initialBalance,
+                    monthlyLimit = monthlyLimit,
                     colorHex = when(type) {
                         "NGAN_HANG" -> "#2563EB"
                         "VI_DIEN_TU" -> "#EC4899"
@@ -446,6 +503,15 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
                     }
                 )
             )
+        }
+    }
+
+    fun setWalletMonthlyLimit(walletId: Long, monthlyLimit: Double) {
+        viewModelScope.launch {
+            val existing = wallets.value.find { it.id == walletId }
+            if (existing != null) {
+                repository.insertWallet(existing.copy(monthlyLimit = monthlyLimit))
+            }
         }
     }
 

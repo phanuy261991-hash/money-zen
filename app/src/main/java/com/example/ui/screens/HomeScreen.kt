@@ -78,6 +78,7 @@ fun HomeScreen(
     budgetProgresses: List<BudgetProgress>,
     savingsGoals: List<SavingsGoalEntity>,
     recurringBills: List<RecurringBillEntity>,
+    isOverallOverLimit: Boolean = false,
     onAddClick: () -> Unit,
     onViewAllTransactions: () -> Unit,
     onTransactionClick: (TransactionEntity) -> Unit,
@@ -215,9 +216,9 @@ fun HomeScreen(
                             .padding(20.dp)
                     ) {
                         Column {
-                            val activeWalletName = wallets.find { it.id == selectedWalletId }?.name ?: "Tất Cả Ví"
+                            val activeWalletName = wallets.find { it.id == selectedWalletId }?.name ?: AppStrings.allWallets
                             Text(
-                                text = "Số Dư Ví ($activeWalletName)",
+                                text = "${AppStrings.totalWalletBalance} ($activeWalletName)",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -287,6 +288,37 @@ fun HomeScreen(
                                         )
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (isOverallOverLimit) {
+                item {
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = ExpenseRed.copy(alpha = 0.15f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, ExpenseRed),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = ExpenseRed)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = AppStrings.overallSpendingWarning,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = ExpenseRed
+                                )
+                                Text(
+                                    text = AppStrings.limitWarningOverall,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = ExpenseRed
+                                )
                             }
                         }
                     }

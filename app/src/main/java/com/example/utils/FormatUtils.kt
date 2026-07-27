@@ -10,7 +10,7 @@ import java.util.Locale
 
 object FormatUtils {
     var currentCurrency: String by mutableStateOf("VND")
-    var currentLanguage: String by mutableStateOf("VI")
+    var currentLanguage: String by mutableStateOf("EN")
 
     @Synchronized
     fun formatCurrency(amount: Double, currency: String = currentCurrency): String {

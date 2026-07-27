@@ -26,7 +26,7 @@ import com.example.data.model.WalletEntity
         SavingsGoalEntity::class,
         RecurringBillEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

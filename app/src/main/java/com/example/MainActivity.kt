@@ -206,6 +206,10 @@ fun MainAppScreen(viewModel: FinanceViewModel = viewModel()) {
             val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
             val appCurrency by viewModel.appCurrency.collectAsStateWithLifecycle()
 
+            val walletBudgetProgresses by viewModel.walletBudgetProgresses.collectAsStateWithLifecycle()
+            val overallMonthlyLimit by viewModel.overallMonthlyLimit.collectAsStateWithLifecycle()
+            val isOverallOverLimit by viewModel.isOverallOverLimit.collectAsStateWithLifecycle()
+
         // Dialog state
         var showAddDialog by remember { mutableStateOf(false) }
         var transactionToEdit by remember { mutableStateOf<TransactionEntity?>(null) }
@@ -344,6 +348,7 @@ fun MainAppScreen(viewModel: FinanceViewModel = viewModel()) {
                         budgetProgresses = budgetProgresses,
                         savingsGoals = savingsGoals,
                         recurringBills = recurringBills,
+                        isOverallOverLimit = isOverallOverLimit,
                         onAddClick = { showAddDialog = true },
                         onViewAllTransactions = { selectedTab = 1 },
                         onTransactionClick = { tx -> transactionToEdit = tx },
@@ -367,7 +372,13 @@ fun MainAppScreen(viewModel: FinanceViewModel = viewModel()) {
                         debts = debts,
                         savingsGoals = savingsGoals,
                         recurringBills = recurringBills,
-                        onAddWallet = { name, type, bal -> viewModel.addWallet(name, type, bal) },
+                        walletBudgetProgresses = walletBudgetProgresses,
+                        overallMonthlyLimit = overallMonthlyLimit,
+                        overallMonthlySpent = totalExpense,
+                        isOverallOverLimit = isOverallOverLimit,
+                        onAddWallet = { name, type, bal, limit -> viewModel.addWallet(name, type, bal, limit) },
+                        onSetWalletLimit = { walletId, limit -> viewModel.setWalletMonthlyLimit(walletId, limit) },
+                        onSetOverallLimit = { limit -> viewModel.setOverallMonthlyLimit(limit) },
                         onDeleteWallet = { wallet -> viewModel.deleteWallet(wallet) },
                         onTransferMoney = { fromId, toId, amount, note -> viewModel.transferMoney(fromId, toId, amount, note) },
                         onAddDebt = { person, amt, type, note, wId -> viewModel.addDebt(person, amt, type, note, wId) },

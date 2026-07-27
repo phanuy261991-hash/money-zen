@@ -10,6 +10,7 @@ data class WalletEntity(
     val name: String,
     val type: String, // "TIEN_MAT", "NGAN_HANG", "VI_DIEN_TU", "THE_TIN_DUNG"
     val balance: Double,
+    val monthlyLimit: Double = 0.0,
     val iconName: String = "AccountBalanceWallet",
     val colorHex: String = "#10B981"
 )
