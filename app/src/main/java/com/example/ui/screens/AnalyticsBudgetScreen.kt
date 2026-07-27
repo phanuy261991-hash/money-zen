@@ -53,6 +53,7 @@ import com.example.ui.theme.IncomeGreen
 import com.example.ui.viewmodel.BudgetProgress
 import com.example.ui.viewmodel.CategorySummary
 import com.example.ui.viewmodel.MonthComparisonData
+import com.example.utils.AppStrings
 import com.example.utils.FormatUtils
 
 @Composable
@@ -177,7 +178,7 @@ fun AnalyticsBudgetScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Biểu Đồ Chi Tiêu Theo Danh Mục",
+                            text = AppStrings.categorySpendingChart,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         Icon(
@@ -192,7 +193,7 @@ fun AnalyticsBudgetScreen(
 
                     if (categorySummaries.isEmpty()) {
                         Text(
-                            text = "Chưa có dữ liệu chi tiêu trong khoảng thời gian này.",
+                            text = AppStrings.noSpendingDataPeriod,
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 12.dp)
@@ -225,7 +226,7 @@ fun AnalyticsBudgetScreen(
                                             fontWeight = FontWeight.Medium
                                         )
                                         Text(
-                                            text = " (${cat.transactionCount} giao dịch)",
+                                            text = " (${AppStrings.transactionCountText(cat.transactionCount)})",
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -262,7 +263,7 @@ fun AnalyticsBudgetScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Ngân Sách Chi Tiêu Hàng Tháng",
+                    text = AppStrings.monthlySpendingBudget,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
@@ -304,7 +305,7 @@ fun AnalyticsBudgetScreen(
                         ) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Sửa ngân sách",
+                                contentDescription = AppStrings.editBudget,
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -320,12 +321,12 @@ fun AnalyticsBudgetScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Đã chi: ${FormatUtils.formatCurrency(spent)} (Chưa đặt hạn mức)",
+                                text = "${AppStrings.spentLabel}: ${FormatUtils.formatCurrency(spent)} (${AppStrings.noLimitSet})",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             TextButton(onClick = { onSetBudgetClick(cat.name, limit) }) {
-                                Text("Đặt hạn mức", fontSize = 11.sp)
+                                Text(AppStrings.setLimit, fontSize = 11.sp)
                             }
                         }
                     } else {
@@ -334,13 +335,13 @@ fun AnalyticsBudgetScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Đã chi: ${FormatUtils.formatCurrency(spent)}",
+                                text = "${AppStrings.spentLabel}: ${FormatUtils.formatCurrency(spent)}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = if (isOver) ExpenseRed else MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Hạn mức: ${FormatUtils.formatCurrency(limit)}",
+                                text = "${AppStrings.limitLabel}: ${FormatUtils.formatCurrency(limit)}",
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -377,7 +378,7 @@ fun AnalyticsBudgetScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Vượt hạn mức ${FormatUtils.formatCurrency(spent - limit)}",
+                                    text = "${AppStrings.exceededLimitBy} ${FormatUtils.formatCurrency(spent - limit)}",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = ExpenseRed
@@ -423,7 +424,7 @@ private fun DonutPieChart(
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Tổng chi tiêu",
+                text = AppStrings.totalExpenses,
                 fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -454,7 +455,7 @@ private fun MonthComparisonCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "So Sánh Với Tháng Trước",
+                    text = AppStrings.compareWithLastMonth,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Icon(
@@ -511,7 +512,7 @@ private fun MonthComparisonCard(
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = "Tháng trước", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = AppStrings.lastMonth, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
 
                 // Group 2: Tháng này
@@ -544,7 +545,7 @@ private fun MonthComparisonCard(
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(text = "Tháng này", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(text = AppStrings.thisMonth, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
@@ -562,7 +563,7 @@ private fun MonthComparisonCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text("Thu nhập", fontSize = 11.sp, color = IncomeGreen, fontWeight = FontWeight.Bold)
+                        Text(AppStrings.income, fontSize = 11.sp, color = IncomeGreen, fontWeight = FontWeight.Bold)
                         Text(FormatUtils.formatCurrency(data.thisMonthIncome), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(2.dp))
                         val incDiffText = if (data.incomeDiff >= 0) "+${FormatUtils.formatCurrency(data.incomeDiff)}" else FormatUtils.formatCurrency(data.incomeDiff)
@@ -581,7 +582,7 @@ private fun MonthComparisonCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Column(modifier = Modifier.padding(10.dp)) {
-                        Text("Chi tiêu", fontSize = 11.sp, color = ExpenseRed, fontWeight = FontWeight.Bold)
+                        Text(AppStrings.expense, fontSize = 11.sp, color = ExpenseRed, fontWeight = FontWeight.Bold)
                         Text(FormatUtils.formatCurrency(data.thisMonthExpense), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(2.dp))
                         val expDiffText = if (data.expenseDiff >= 0) "+${FormatUtils.formatCurrency(data.expenseDiff)}" else FormatUtils.formatCurrency(data.expenseDiff)

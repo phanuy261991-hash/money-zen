@@ -198,4 +198,18 @@ object AppStrings {
     val noTransactionsPeriod get() = if (isEn) "No transactions found in this period." else "Chưa có giao dịch nào trong khoảng thời gian này."
     val detailedReportTitle get() = if (isEn) "Detailed Report" else "Báo Cáo Chi Tiết"
     val incomeVsExpenseRatio get() = if (isEn) "Income vs Expense Ratio" else "Tỷ Lệ Thu vs Chi"
+
+    val categorySpendingChart get() = if (isEn) "Category Expense Chart" else "Biểu Đồ Chi Tiêu Theo Danh Mục"
+    val noSpendingDataPeriod get() = if (isEn) "No spending data in this period." else "Chưa có dữ liệu chi tiêu trong khoảng thời gian này."
+    val monthlySpendingBudget get() = if (isEn) "Monthly Spending Budget" else "Ngân Sách Chi Tiêu Hàng Tháng"
+    val compareWithLastMonth get() = if (isEn) "Compare with Last Month" else "So Sánh Với Tháng Trước"
+    val lastMonth get() = if (isEn) "Last Month" else "Tháng trước"
+    val thisMonth get() = if (isEn) "This Month" else "Tháng này"
+    val editBudget get() = if (isEn) "Edit Budget" else "Sửa ngân sách"
+    val setLimit get() = if (isEn) "Set Limit" else "Đặt hạn mức"
+    val spentLabel get() = if (isEn) "Spent" else "Đã chi"
+    val limitLabel get() = if (isEn) "Limit" else "Hạn mức"
+    val exceededLimitBy get() = if (isEn) "Exceeded limit by" else "Vượt hạn mức"
+    val totalExpenses get() = if (isEn) "Total Expenses" else "Tổng chi tiêu"
+    fun transactionCountText(count: Int) = if (isEn) "$count transactions" else "$count giao dịch"
 }
