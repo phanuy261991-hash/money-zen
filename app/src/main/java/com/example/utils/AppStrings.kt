@@ -212,4 +212,31 @@ object AppStrings {
     val exceededLimitBy get() = if (isEn) "Exceeded limit by" else "Vượt hạn mức"
     val totalExpenses get() = if (isEn) "Total Expenses" else "Tổng chi tiêu"
     fun transactionCountText(count: Int) = if (isEn) "$count transactions" else "$count giao dịch"
+
+    // Onboarding Walkthrough Guide
+    val userGuideTitle get() = if (isEn) "User Guide" else "Hướng Dẫn Sử Dụng"
+    val userGuideSubTitle get() = if (isEn) "Step-by-step app walkthrough" else "Hướng dẫn chi tiết từng bước cho người mới"
+    val onboardingWelcomeTitle get() = if (isEn) "Welcome to Smart Finance Manager!" else "Chào Mừng Đến Với Quản Lý Chi Tiêu!"
+    val onboardingWelcomeDesc get() = if (isEn) "Track daily expenses, manage wallets, set spending budgets, and control your personal finances effortlessly." else "Giải pháp quản lý tài chính cá nhân thông minh: ghi chép thu chi, quản lý các ví, đặt hạn mức ngân sách và kiểm soát dòng tiền hiệu quả."
+    
+    val onboardingStep1Title get() = if (isEn) "1. Set Up Your Wallets" else "1. Quản Lý Các Ví & Tài Khoản"
+    val onboardingStep1Desc get() = if (isEn) "Create separate wallets for Cash, Bank accounts, or E-wallets. Set individual monthly spending limits for each wallet to avoid overspending." else "Phân loại nguồn tiền thành Tiền mặt, Thẻ ngân hàng, Ví điện tử. Đặt hạn mức chi tiêu riêng cho từng ví để quản lý dòng tiền tốt hơn."
+
+    val onboardingStep2Title get() = if (isEn) "2. Track Income & Expenses" else "2. Ghi Chép Thu Chi Hàng Ngày"
+    val onboardingStep2Desc get() = if (isEn) "Tap the floating (+) button at any time to quickly log transactions. Pick categories like Food, Shopping, or Salary with custom notes." else "Nhấn nút (+) màu xanh ở giữa thanh menu bất cứ lúc nào để ghi chép thu chi. Phân loại theo Ăn uống, Mua sắm, Lương... chỉ trong vài giây."
+
+    val onboardingStep3Title get() = if (isEn) "3. Budgets & Smart Analytics" else "3. Ngân Sách & Báo Cáo Thông Minh"
+    val onboardingStep3Desc get() = if (isEn) "Set monthly category budget limits. Receive instant red alerts when spending exceeds limits and compare reports with last month." else "Đặt hạn mức ngân sách cho từng mục chi tiêu. Nhận cảnh báo màu đỏ khi chi tiêu quá đà và xem biểu đồ phân tích trực quan so với tháng trước."
+
+    val onboardingStep4Title get() = if (isEn) "4. Debts, Savings & Bills" else "4. Sổ Nợ, Hũ Tiết Kiệm & Hóa Đơn"
+    val onboardingStep4Desc get() = if (isEn) "Easily track loans and borrowings, create goal-based savings buckets, and set auto-recurring bill payments." else "Ghi chép chính xác các khoản vay/cho vay, tạo các hũ tiết kiệm mục tiêu và cài đặt nhắc nhở thanh toán hóa đơn định kỳ hàng tháng."
+
+    val onboardingStep5Title get() = if (isEn) "5. Security & Personalization" else "5. Bảo Mật & Tùy Chỉnh"
+    val onboardingStep5Desc get() = if (isEn) "Secure your app with Fingerprint, Face ID, or PIN Code. Customize Light/Dark mode and Currency (VND, USD) anytime in Settings." else "Bảo vệ ứng dụng bằng Khóa Vân tay / Face ID hoặc mã PIN 4 số. Tùy chỉnh chế độ Sáng/Tối và đơn vị tiền tệ (VND, USD) trong mục Cài đặt."
+
+    val btnNext get() = if (isEn) "Next" else "Tiếp theo"
+    val btnBack get() = if (isEn) "Back" else "Quay lại"
+    val btnSkip get() = if (isEn) "Skip" else "Bỏ qua"
+    val btnGetStarted get() = if (isEn) "Get Started" else "Bắt đầu ngay"
+    val replayGuide get() = if (isEn) "Replay Onboarding Guide" else "Xem lại hướng dẫn sử dụng"
 }

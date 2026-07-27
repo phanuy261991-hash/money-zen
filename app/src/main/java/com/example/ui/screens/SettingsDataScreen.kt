@@ -7,6 +7,7 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -84,6 +85,7 @@ fun SettingsDataScreen(
     onLockAppNow: () -> Unit = {},
     onChangePin: (String) -> Unit = {},
     onTestBiometricAuth: () -> Unit = {},
+    onOpenUserGuide: () -> Unit = {},
     onInsertSampleData: () -> Unit,
     onClearAllData: () -> Unit,
     onGetCsvData: () -> String
@@ -167,6 +169,61 @@ fun SettingsDataScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item { Spacer(modifier = Modifier.height(8.dp)) }
+
+        // User Guide / Step-by-step Onboarding Card
+        item {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenUserGuide() }
+                    .testTag("open_user_guide_btn")
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF00A8FF).copy(alpha = 0.15f),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color(0xFF00A8FF),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = AppStrings.userGuideTitle,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = AppStrings.userGuideSubTitle,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = onOpenUserGuide,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00A8FF))
+                    ) {
+                        Text(AppStrings.viewDetails, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
 
         // Privacy Banner
         item {

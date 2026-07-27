@@ -59,6 +59,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.model.TransactionEntity
 import com.example.ui.components.AddEditTransactionDialog
 import com.example.ui.components.BudgetDialog
+import com.example.ui.components.OnboardingGuideDialog
 import android.widget.Toast
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -209,6 +210,14 @@ fun MainAppScreen(viewModel: FinanceViewModel = viewModel()) {
             val walletBudgetProgresses by viewModel.walletBudgetProgresses.collectAsStateWithLifecycle()
             val overallMonthlyLimit by viewModel.overallMonthlyLimit.collectAsStateWithLifecycle()
             val isOverallOverLimit by viewModel.isOverallOverLimit.collectAsStateWithLifecycle()
+            val showOnboarding by viewModel.showOnboarding.collectAsStateWithLifecycle()
+
+        // First-Time User Interactive Onboarding Walkthrough
+        if (showOnboarding) {
+            OnboardingGuideDialog(
+                onDismiss = { viewModel.completeOnboarding() }
+            )
+        }
 
         // Dialog state
         var showAddDialog by remember { mutableStateOf(false) }
@@ -412,6 +421,7 @@ fun MainAppScreen(viewModel: FinanceViewModel = viewModel()) {
                                 )
                             }
                         },
+                        onOpenUserGuide = { viewModel.replayOnboarding() },
                         onInsertSampleData = { viewModel.insertSampleData() },
                         onClearAllData = { viewModel.clearAllData() },
                         onGetCsvData = { viewModel.exportCsvData() }

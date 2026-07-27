@@ -115,6 +115,18 @@ class FinanceViewModel(application: Application) : AndroidViewModel(application)
     val appLanguage = MutableStateFlow(prefs.getString("app_language", "VI") ?: "VI")
     val appCurrency = MutableStateFlow(prefs.getString("app_currency", "VND") ?: "VND")
 
+    // First time user onboarding state
+    val showOnboarding = MutableStateFlow(!prefs.getBoolean("has_completed_onboarding", false))
+
+    fun completeOnboarding() {
+        showOnboarding.value = false
+        prefs.edit().putBoolean("has_completed_onboarding", true).apply()
+    }
+
+    fun replayOnboarding() {
+        showOnboarding.value = true
+    }
+
     init {
         com.example.utils.FormatUtils.currentLanguage = appLanguage.value
         com.example.utils.FormatUtils.currentCurrency = appCurrency.value
