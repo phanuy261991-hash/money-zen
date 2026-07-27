@@ -239,4 +239,21 @@ object AppStrings {
     val btnSkip get() = if (isEn) "Skip" else "Bỏ qua"
     val btnGetStarted get() = if (isEn) "Get Started" else "Bắt đầu ngay"
     val replayGuide get() = if (isEn) "Replay Onboarding Guide" else "Xem lại hướng dẫn sử dụng"
+
+    // About & App Information Section
+    val aboutSectionTitle get() = if (isEn) "About" else "Giới Thiệu"
+    val aboutSectionSubTitle get() = if (isEn) "User Guide & App Information" else "Hướng dẫn sử dụng & Thông tin ứng dụng"
+    val optionUserGuide get() = if (isEn) "User Guide" else "Hướng dẫn sử dụng"
+    val optionUserGuideDesc get() = if (isEn) "Step-by-step walkthrough for new users" else "Hướng dẫn chi tiết từng bước khi dùng lần đầu"
+    val optionAppInfo get() = if (isEn) "App Information" else "Thông tin ứng dụng"
+    val optionAppInfoDesc get() = if (isEn) "Version, features, and privacy details" else "Phiên bản, tính năng và thông tin bảo mật"
+    val appInfoDialogTitle get() = if (isEn) "App Information" else "Thông Tin Ứng Dụng"
+    val appInfoVersionLabel get() = if (isEn) "Version 1.0.0 (Build 2026)" else "Phiên bản 1.0.0 (Build 2026)"
+    val appInfoDescText get() = if (isEn) "Smart Personal Finance Manager helps you track expenses, manage multiple wallets, set budget limits, and stay in control of your money safely and offline." else "Ứng dụng Quản Lý Chi Tiêu Thông Minh giúp bạn ghi chép thu chi hàng ngày, quản lý các ví tiền, đặt hạn mức ngân sách và bảo mật dữ liệu an toàn offline trên thiết bị."
+    val appInfoKeyFeatures get() = if (isEn) "Key Features:" else "Các tính năng nổi bật:"
+    val appInfoFeature1 get() = if (isEn) "• Multi-wallet tracking with custom budget limits" else "• Quản lý nhiều ví với hạn mức chi tiêu riêng"
+    val appInfoFeature2 get() = if (isEn) "• Instant income/expense categorization & charts" else "• Phân loại thu chi thông minh & biểu đồ báo cáo"
+    val appInfoFeature3 get() = if (isEn) "• Fingerprint, Face ID & PIN biometric security" else "• Bảo mật bằng Vân tay / Face ID / Mã PIN"
+    val appInfoFeature4 get() = if (isEn) "• Offline data storage & CSV export / import" else "• Lưu trữ dữ liệu Offline & Xuất/Nhập tệp CSV"
+    val closeBtn get() = if (isEn) "Close" else "Đóng"
 }
