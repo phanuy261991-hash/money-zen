@@ -23,16 +23,32 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-enum class AppThemeMode(val label: String) {
-    SYSTEM("Theo hệ thống"),
-    LIGHT("Giao diện Sáng"),
-    DARK("Giao diện Tối")
+import com.example.utils.FormatUtils
+
+enum class AppThemeMode {
+    SYSTEM,
+    LIGHT,
+    DARK;
+
+    val label: String
+        get() = when (this) {
+            SYSTEM -> if (FormatUtils.currentLanguage == "EN") "System Default" else "Theo hệ thống"
+            LIGHT -> if (FormatUtils.currentLanguage == "EN") "Light Mode" else "Giao diện Sáng"
+            DARK -> if (FormatUtils.currentLanguage == "EN") "Dark Mode" else "Giao diện Tối"
+        }
 }
 
-enum class TimePeriodFilter(val label: String) {
-    THIS_MONTH("Tháng này"),
-    LAST_MONTH("Tháng trước"),
-    ALL_TIME("Tất cả thời gian")
+enum class TimePeriodFilter {
+    THIS_MONTH,
+    LAST_MONTH,
+    ALL_TIME;
+
+    val label: String
+        get() = when (this) {
+            THIS_MONTH -> if (FormatUtils.currentLanguage == "EN") "This Month" else "Tháng này"
+            LAST_MONTH -> if (FormatUtils.currentLanguage == "EN") "Last Month" else "Tháng trước"
+            ALL_TIME -> if (FormatUtils.currentLanguage == "EN") "All Time" else "Tất cả thời gian"
+        }
 }
 
 data class CategorySummary(

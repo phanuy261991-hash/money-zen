@@ -359,7 +359,7 @@ fun HomeScreen(
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Báo Cáo Chi Tiêu",
+                                    text = AppStrings.spendingReportTitle,
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                 )
                             }
@@ -369,7 +369,7 @@ fun HomeScreen(
                                 modifier = Modifier.testTag("view_analytics_detail_btn")
                             ) {
                                 Text(
-                                    text = "Xem chi tiết",
+                                    text = AppStrings.viewDetails,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
@@ -392,14 +392,14 @@ fun HomeScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Chưa có dữ liệu chi tiêu trong ${selectedPeriod.label.lowercase()}.",
+                                    text = if (AppStrings.isEn) "No spending data for this period." else "Chưa có dữ liệu chi tiêu trong ${selectedPeriod.label.lowercase()}.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         } else {
                             Text(
-                                text = "Danh mục chi tiêu nhiều nhất:",
+                                text = AppStrings.topSpendingCategories,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -480,13 +480,13 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Cảnh báo ngân sách chi tiêu!",
+                                    text = AppStrings.budgetWarningTitle,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = ExpenseRed
                                 )
                                 Text(
-                                    text = "Có ${overBudgets.size} danh mục đã vượt/gần chạm hạn mức ngân sách tháng.",
+                                    text = AppStrings.budgetWarningMsg(overBudgets.size),
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -501,7 +501,7 @@ fun HomeScreen(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = "Hũ Tiết Kiệm Của Tôi",
+                            text = AppStrings.mySavingsGoals,
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                         )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -548,11 +548,11 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Giao Dịch Mới Nhất",
+                        text = AppStrings.latestTransactions,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     TextButton(onClick = onViewAllTransactions) {
-                        Text("Xem tất cả", fontSize = 13.sp)
+                        Text(AppStrings.viewAll, fontSize = 13.sp)
                         Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
@@ -572,7 +572,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Chưa có giao dịch nào trong khoảng thời gian này.",
+                                text = AppStrings.noTransactionsPeriod,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

@@ -87,12 +87,12 @@ fun AnalyticsBudgetScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại"
+                            contentDescription = if (com.example.utils.AppStrings.isEn) "Back" else "Quay lại"
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Báo Cáo Chi Tiết",
+                        text = com.example.utils.AppStrings.detailedReportTitle,
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                     )
                 }
@@ -109,7 +109,7 @@ fun AnalyticsBudgetScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Tỷ Lệ Thu vs Chi",
+                        text = com.example.utils.AppStrings.incomeVsExpenseRatio,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -122,7 +122,7 @@ fun AnalyticsBudgetScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Thu nhập", fontSize = 11.sp, color = IncomeGreen)
+                            Text(com.example.utils.AppStrings.income, fontSize = 11.sp, color = IncomeGreen)
                             Text(
                                 FormatUtils.formatCurrency(totalIncome),
                                 fontSize = 15.sp,
@@ -131,7 +131,7 @@ fun AnalyticsBudgetScreen(
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Chi tiêu", fontSize = 11.sp, color = ExpenseRed)
+                            Text(com.example.utils.AppStrings.expense, fontSize = 11.sp, color = ExpenseRed)
                             Text(
                                 FormatUtils.formatCurrency(totalExpense),
                                 fontSize = 15.sp,

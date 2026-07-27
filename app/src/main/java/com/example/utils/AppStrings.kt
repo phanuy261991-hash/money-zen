@@ -1,7 +1,7 @@
 package com.example.utils
 
 object AppStrings {
-    private val isEn: Boolean
+    val isEn: Boolean
         get() = FormatUtils.currentLanguage == "EN"
 
     val currentCurrency: String
@@ -186,4 +186,16 @@ object AppStrings {
     val noLimitSet get() = if (isEn) "No limit set" else "Chưa đặt hạn mức"
     val overallSpendingWarning get() = if (isEn) "OVERALL MONTHLY SPENDING ALERT" else "CẢNH BÁO TỔNG CHI TIÊU THÁNG"
     val walletSpendingWarning get() = if (isEn) "WALLET SPENDING ALERT" else "CẢNH BÁO CHI TIÊU VÍ"
+
+    // Home & Analytics
+    val spendingReportTitle get() = if (isEn) "Spending Report" else "Báo Cáo Chi Tiêu"
+    val viewDetails get() = if (isEn) "View Details" else "Xem chi tiết"
+    val topSpendingCategories get() = if (isEn) "Top Spending Categories:" else "Danh mục chi tiêu nhiều nhất:"
+    val budgetWarningTitle get() = if (isEn) "Budget Alert!" else "Cảnh báo ngân sách chi tiêu!"
+    fun budgetWarningMsg(count: Int) = if (isEn) "$count categories exceeded or near monthly limit." else "Có $count danh mục đã vượt/gần chạm hạn mức ngân sách tháng."
+    val mySavingsGoals get() = if (isEn) "My Savings Goals" else "Hũ Tiết Kiệm Của Tôi"
+    val latestTransactions get() = if (isEn) "Latest Transactions" else "Giao Dịch Mới Nhất"
+    val noTransactionsPeriod get() = if (isEn) "No transactions found in this period." else "Chưa có giao dịch nào trong khoảng thời gian này."
+    val detailedReportTitle get() = if (isEn) "Detailed Report" else "Báo Cáo Chi Tiết"
+    val incomeVsExpenseRatio get() = if (isEn) "Income vs Expense Ratio" else "Tỷ Lệ Thu vs Chi"
 }
